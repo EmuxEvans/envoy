@@ -116,8 +116,6 @@ public:
         span.setTag("ratelimit_status", "ok");
       }
     }
-
-    // span.setTag("guid:x-request-id", request_id_);
   }
 
 private:

@@ -15,6 +15,18 @@
 namespace Envoy {
 namespace Grpc {
 
+class AsyncClientTracingConfig : public Tracing::Config {
+public:
+  Tracing::OperationName operationName() const override { return Tracing::OperationName::Egress; }
+
+  const std::vector<Http::LowerCaseString>& requestHeadersForTags() const override {
+    return request_headers_for_tags_;
+  }
+
+private:
+  const std::vector<Http::LowerCaseString> request_headers_for_tags_;
+};
+
 template <class RequestType, class ResponseType> class AsyncStreamImpl;
 template <class RequestType, class ResponseType> class AsyncRequestImpl;
 
@@ -276,8 +288,10 @@ public:
       : AsyncStreamImpl<RequestType, ResponseType>(parent, service_method, *this, timeout),
         request_(request), callbacks_(callbacks), finalizer_factory_(finalizer_factory) {
 
-    current_span_ = parent_span.spawnChild("async " + parent.remote_cluster_name_ + " egress",
-                                           ProdSystemTimeSource::instance_.currentTime());
+    AsyncClientTracingConfig config;
+    current_span_ =
+        parent_span.spawnChild(config, "async " + parent.remote_cluster_name_ + " egress",
+                               ProdSystemTimeSource::instance_.currentTime());
     current_span_->setTag("upstream_cluster_name", parent.remote_cluster_name_);
   }
 
